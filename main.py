@@ -11,10 +11,18 @@ class EquationSolver(object):
         for i in range(self._rows):
             for j in range(self._rows):
                 self._mat[i][j] = 1 / (i + j + 1)
-        self._mat[:, self._cols - 1] = np.array(
+        self._b: np.ndarray = np.array(
             [1889 / 594, 1441 / 640, 3511 / 1931, 1812 / 1171, 1363 / 1005, 1379 / 1138, 1797 / 1637,
              1029 / 1024, 1548 / 1669, 1990 / 2309, 1059 / 1315, 1088 / 1439, 397 / 557],
-            dtype=float).T
+            dtype=float)
+        self._mat[:, self._cols - 1] = self._b.T
+        self._max_iterations: int = 10000
+        self._threshold: float = 1e-9
+
+    def _print_solution(self, x: np.ndarray):
+        for i in range(self._rows):
+            print(f"x_{i} = {x[i]}", end="\n")
+        print()
 
     @abstractmethod
     def solve(self):
@@ -45,13 +53,10 @@ class GaussianEliminationSolver(EquationSolver):
     def __check(self, i, row, col):
         if 0.00 in set(self._mat[i]) and len(set(self._mat[i])) == 1:
             for j in range(row - 1, i, -1):
-                try:
-                    if not (0.00 in set(self._mat[j]) and len(set(self._mat[j])) == 1):
-                        self.__swag(self._mat[i], self._mat[j])
-                        self.__select(i, col)
-                        break
-                except:
-                    return
+                if not (0.00 in set(self._mat[j]) and len(set(self._mat[j])) == 1):
+                    self.__swag(self._mat[i], self._mat[j])
+                    self.__select(i, col)
+                    break
 
     def __get_unique_solution(self):
         for i in range(self._rows):
@@ -76,10 +81,38 @@ class GaussianEliminationSolver(EquationSolver):
         # By default, the equation has a solution
         self.__get_unique_solution()
         print("Gaussian Elimination Solution:")
-        for i in range(0, self._rows):
-            print(f"x_{i} = {self._mat[i][self._cols - 1]}", end="\n")
+        self._print_solution(self._mat[:, self._cols - 1].T)
+
+
+class GaussSeidelSolver(EquationSolver):
+    def solve(self):
+        x0 = np.array(np.zeros(self._rows))
+        x = np.array(np.zeros(self._rows))
+        k = 0
+        temp_x = x0.copy()
+        while k < self._max_iterations:
+            for i in range(self._rows):
+                temp = 0
+                temp_x = x0.copy()
+                for j in range(self._rows):
+                    if i != j:
+                        temp += x[j] * self._mat[i][j]
+                x[i] = (self._b[i] - temp) / self._mat[i][i]
+                x0[i] = x[i].copy()
+            norm = np.linalg.norm(x - temp_x)
+            k += 1
+            if norm < self._threshold:
+                break
+            else:
+                x0 = x.copy()
+        print("Gauss Seidel Solution:")
+        print(f"Iterations: {k}")
+        self._print_solution(x)
 
 
 if __name__ == '__main__':
-    solver = GaussianEliminationSolver()
-    solver.solve()
+    ge_solver = GaussianEliminationSolver()
+    ge_solver.solve()
+
+    gs_solver = GaussSeidelSolver()
+    gs_solver.solve()
