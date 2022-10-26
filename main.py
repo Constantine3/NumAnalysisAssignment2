@@ -9,7 +9,7 @@ class EquationSolver(object):
     def __init__(self):
         self._rows: int = 13
         self._cols: int = 14
-        self._mat: np.ndarray = np.zeros(shape=(self._rows, self._cols), dtype=float)
+        self._mat: np.ndarray = np.zeros(shape=(self._rows, self._rows), dtype=float)
         for i in range(self._rows):
             for j in range(self._rows):
                 self._mat[i][j] = 1 / (i + j + 1)
@@ -17,9 +17,8 @@ class EquationSolver(object):
             [1889 / 594, 1441 / 640, 3511 / 1931, 1812 / 1171, 1363 / 1005, 1379 / 1138, 1797 / 1637,
              1029 / 1024, 1548 / 1669, 1990 / 2309, 1059 / 1315, 1088 / 1439, 397 / 557],
             dtype=float)
-        self._mat[:, self._cols - 1] = self._b.T
         self._max_iterations: int = 10000
-        self._threshold: float = 1e-9
+        self._threshold: float = 1e-3
         # The estimated solution is all zero
         self._estimated_solution = np.array(np.zeros(self._rows))
 
@@ -46,6 +45,11 @@ class EquationSolver(object):
 class GaussianEliminationSolver(EquationSolver):
     def __init__(self):
         super().__init__()
+        self._mat: np.ndarray = np.zeros(shape=(self._rows, self._cols), dtype=float)
+        for i in range(self._rows):
+            for j in range(self._rows):
+                self._mat[i][j] = 1 / (i + j + 1)
+        self._mat[:, self._cols - 1] = self._b.T
 
     @staticmethod
     def __swag(a: np.ndarray, b: np.ndarray):
@@ -127,6 +131,28 @@ class GaussSeidelSolver(EquationSolver):
         self._show_norm_line_chart(norms=norms, label="Gauss Seidel Norm")
 
 
+class GradientDescentSolver(EquationSolver):
+    def solve(self):
+        x0: np.ndarray = self._estimated_solution.copy()
+        x: np.ndarray = x0.copy()
+        k = 0
+        norms: list[float] = []
+        while k < self._max_iterations:
+            x0 = x.copy()
+            k += 1
+            r = self._b - np.dot(self._mat, x0)
+            a = np.dot(r.T, r) / np.dot(r.T, np.dot(self._mat, r))
+            x = x0 + a * r
+            norm: float = np.linalg.norm(x0 - x)
+            norms.append(norm)
+            if norm < self._threshold:
+                break
+        print("Gradient Descent Solution:")
+        print(f"Iterations: {k}")
+        self._print_solution(x)
+        self._show_norm_line_chart(norms=norms, label="Gradient Descent Norm")
+
+
 def run(solvers: dict[str, bool]):
     if not solvers:
         return
@@ -137,6 +163,7 @@ def run(solvers: dict[str, bool]):
 
 if __name__ == '__main__':
     run({
-        "GaussianEliminationSolver": False,
-        "GaussSeidelSolver": False
+        "GaussianEliminationSolver": True,
+        "GaussSeidelSolver": True,
+        "GradientDescentSolver": True
     })
