@@ -178,6 +178,8 @@ class ConjugateGradientSolver(EquationSolver):
             else:
                 beta = np.linalg.norm(r) ** 2 / np.linalg.norm(r1) ** 2
                 p = r + beta * p
+        print("Conjugate Gradient Solution:")
+        print(f"Iterations: {k}")
         self._print_solution(x)
         self._show_norm_line_chart(norms=norms, label="Conjugate Gradient Norm", x_axis=1)
 
