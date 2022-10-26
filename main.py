@@ -1,6 +1,8 @@
+import sys
 from abc import abstractmethod
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 class EquationSolver(object):
@@ -18,11 +20,23 @@ class EquationSolver(object):
         self._mat[:, self._cols - 1] = self._b.T
         self._max_iterations: int = 10000
         self._threshold: float = 1e-9
+        # The estimated solution is all zero
+        self._estimated_solution = np.array(np.zeros(self._rows))
 
     def _print_solution(self, x: np.ndarray):
         for i in range(self._rows):
             print(f"x_{i} = {x[i]}", end="\n")
         print()
+
+    @staticmethod
+    def _show_norm_line_chart(norms: list[float], label: str):
+        iterations: np.ndarray = np.arange(len(norms))
+        plt.plot(iterations, norms, color='r', marker='.',
+                 markeredgecolor='r', markersize='1', markeredgewidth=1, label=label)
+        plt.xlabel("iterations")
+        plt.ylabel("norm")
+        plt.legend(loc="best")
+        plt.show()
 
     @abstractmethod
     def solve(self):
@@ -86,10 +100,11 @@ class GaussianEliminationSolver(EquationSolver):
 
 class GaussSeidelSolver(EquationSolver):
     def solve(self):
-        x0 = np.array(np.zeros(self._rows))
-        x = np.array(np.zeros(self._rows))
-        k = 0
-        temp_x = x0.copy()
+        x0: np.ndarray = self._estimated_solution.copy()
+        x: np.ndarray = x0.copy()
+        k: int = 0
+        temp_x: np.ndarray = x0.copy()
+        norms: list[float] = []
         while k < self._max_iterations:
             for i in range(self._rows):
                 temp = 0
@@ -99,7 +114,8 @@ class GaussSeidelSolver(EquationSolver):
                         temp += x[j] * self._mat[i][j]
                 x[i] = (self._b[i] - temp) / self._mat[i][i]
                 x0[i] = x[i].copy()
-            norm = np.linalg.norm(x - temp_x)
+            norm: float = np.linalg.norm(x - temp_x)
+            norms.append(norm)
             k += 1
             if norm < self._threshold:
                 break
@@ -108,11 +124,19 @@ class GaussSeidelSolver(EquationSolver):
         print("Gauss Seidel Solution:")
         print(f"Iterations: {k}")
         self._print_solution(x)
+        self._show_norm_line_chart(norms=norms, label="Gauss Seidel Norm")
+
+
+def run(solvers: dict[str, bool]):
+    if not solvers:
+        return
+    for solver_name in solvers.keys():
+        if solvers[solver_name]:
+            getattr(sys.modules[__name__], solver_name)().solve()
 
 
 if __name__ == '__main__':
-    ge_solver = GaussianEliminationSolver()
-    ge_solver.solve()
-
-    gs_solver = GaussSeidelSolver()
-    gs_solver.solve()
+    run({
+        "GaussianEliminationSolver": False,
+        "GaussSeidelSolver": False
+    })
