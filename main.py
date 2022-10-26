@@ -3,6 +3,7 @@ from abc import abstractmethod
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MultipleLocator
 
 
 class EquationSolver(object):
@@ -28,10 +29,14 @@ class EquationSolver(object):
         print()
 
     @staticmethod
-    def _show_norm_line_chart(norms: list[float], label: str):
+    def _show_norm_line_chart(norms: list[float], label: str, x_axis: float = -1):
         iterations: np.ndarray = np.arange(len(norms))
         plt.plot(iterations, norms, color='r', marker='.',
                  markeredgecolor='r', markersize='1', markeredgewidth=1, label=label)
+        if x_axis > 0:
+            x_major_locator = MultipleLocator(x_axis)
+            ax = plt.gca()
+            ax.xaxis.set_major_locator(x_major_locator)
         plt.xlabel("iterations")
         plt.ylabel("norm")
         plt.legend(loc="best")
@@ -153,6 +158,30 @@ class GradientDescentSolver(EquationSolver):
         self._show_norm_line_chart(norms=norms, label="Gradient Descent Norm")
 
 
+class ConjugateGradientSolver(EquationSolver):
+    def solve(self):
+        k: int = 0
+        x: np.ndarray = self._estimated_solution.copy()
+        r: np.ndarray = self._b - np.dot(self._mat, x)
+        p = r.copy()
+        norms: list[float] = []
+        while True:
+            k += 1
+            r1 = r
+            a = np.dot(r.T, r) / np.dot(p.T, np.dot(self._mat, p))
+            x = x + a * p
+            r = r - a * np.dot(self._mat, p)
+            norm = np.linalg.norm(np.dot(self._mat, x) - self._b) / np.linalg.norm(self._b)
+            norms.append(norm)
+            if norm < self._threshold:
+                break
+            else:
+                beta = np.linalg.norm(r) ** 2 / np.linalg.norm(r1) ** 2
+                p = r + beta * p
+        self._print_solution(x)
+        self._show_norm_line_chart(norms=norms, label="Conjugate Gradient Norm", x_axis=1)
+
+
 def run(solvers: dict[str, bool]):
     if not solvers:
         return
@@ -165,5 +194,6 @@ if __name__ == '__main__':
     run({
         "GaussianEliminationSolver": True,
         "GaussSeidelSolver": True,
-        "GradientDescentSolver": True
+        "GradientDescentSolver": True,
+        "ConjugateGradientSolver": True
     })
