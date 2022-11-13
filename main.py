@@ -196,23 +196,24 @@ def run(solvers: dict[str, bool]):
             norms = getattr(sys.modules[__name__], solver_name)().solve()
             if norms:
                 norms_list.append(norms)
-    plt.plot(np.arange(len(norms_list[0])), norms_list[0], 'r--', label='Gauss Seidel Method')
-    plt.plot(np.arange(len(norms_list[1])), norms_list[1], 'g--', label='Gradient Descent Method')
-    plt.plot(np.arange(len(norms_list[2])), norms_list[2], 'b--', label='Conjugate Gradient Method')
-    plt.plot(np.arange(len(norms_list[0])), norms_list[0], 'ro-',
-             np.arange(len(norms_list[1])), norms_list[1], 'g+-',
-             np.arange(len(norms_list[2])), norms_list[2], 'b^-',
-             markersize='1', markeredgewidth=1)
-    plt.xlabel("iterations")
-    plt.ylabel("norm")
-    plt.legend(loc="best")
-    plt.show()
+    if len(norms_list) == 3:
+        plt.plot(np.arange(len(norms_list[0])), norms_list[0], 'r--', label='Gauss Seidel Method')
+        plt.plot(np.arange(len(norms_list[1])), norms_list[1], 'g--', label='Gradient Descent Method')
+        plt.plot(np.arange(len(norms_list[2])), norms_list[2], 'b--', label='Conjugate Gradient Method')
+        plt.plot(np.arange(len(norms_list[0])), norms_list[0], 'ro-',
+                 np.arange(len(norms_list[1])), norms_list[1], 'g+-',
+                 np.arange(len(norms_list[2])), norms_list[2], 'b^-',
+                 markersize='1', markeredgewidth=1)
+        plt.xlabel("iterations")
+        plt.ylabel("norm")
+        plt.legend(loc="best")
+        plt.show()
 
 
 if __name__ == '__main__':
     run({
         "GaussianEliminationSolver": True,
-        "GaussSeidelSolver": True,
-        "GradientDescentSolver": True,
-        "ConjugateGradientSolver": True
+        "GaussSeidelSolver": False,
+        "GradientDescentSolver": False,
+        "ConjugateGradientSolver": False
     })
